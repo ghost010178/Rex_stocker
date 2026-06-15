@@ -397,6 +397,7 @@ def generate_report(trades_df, equity_df, total_score, close_df, config,
     orders = []
     for rank, (ticker, score, price) in enumerate(selected, 1):
         order_valid = True
+        order_atr = None  # 供 paper trading 複製回測 gap filter
         time_exit = get_next_n_trading_days(latest_date, max_hold_days)
         # 使用精確 ATR（與回測引擎同公式）
         if tp_sl_mode == 'atr':
@@ -405,6 +406,7 @@ def generate_report(trades_df, equity_df, total_score, close_df, config,
             atr_val = _compute_display_atr(close_df[ticker], high_s, low_s)
 
             if not pd.isna(atr_val) and atr_val > 0:
+                order_atr = float(atr_val)
                 tp_price = price + atr_val * config.get('tp_atr_mult', 3.0)
                 sl_price = price - atr_val * config.get('sl_atr_mult', 2.0)
                 # Sanity checks
@@ -487,6 +489,8 @@ def generate_report(trades_df, equity_df, total_score, close_df, config,
                 'limit_price': round(float(price), 4),
                 'tp_price': round(float(tp_price), 4),
                 'sl_price': round(float(sl_price), 4),
+                'atr': round(order_atr, 4) if order_atr else None,
+                'gap_limit_atr': float(config.get('gap_filter', 1.5)),
                 'max_hold_days': int(max_hold_days),
                 'time_exit': time_exit,
                 'model_version': 'v8.5',
@@ -1993,6 +1997,8 @@ def main():
         'top_k': args.top_k,
         'buy_cost': args.buy_cost,
         'sell_cost': args.sell_cost,
+        'gap_filter': args.gap_filter,
+        'dynamic_gap_filter': args.dynamic_gap_filter,
     }
     generate_report(report_trades_df, report_equity_df, total_score, close_df, config,
                     metrics, benchmark_equity, ew_equity,

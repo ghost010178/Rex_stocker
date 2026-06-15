@@ -34,6 +34,7 @@ def load_data():
         'initial_capital': 200_000,
         'capital': 200_000,
         'positions': {},          # {ticker: {entry, tp, sl, entry_date, shares, day_count}}
+        'pending_orders': [],     # 待執行訂單（next-open 模型：訊號隔日開盤才進場）
         'closed_trades': [],      # [{ticker, entry, exit, pnl_pct, reason, entry_date, exit_date}]
         'equity_curve': [],       # [{date, equity, capital, n_positions}]
         'daily_signals': [],      # [{date, tickers: [...]}]
@@ -118,11 +119,16 @@ def extract_signals_from_orders():
     for order in payload.get('orders', []):
         if order.get('side') != 'buy':
             continue
+        ref_close = order.get('reference_close')
+        atr = order.get('atr')
         signals.append({
             'ticker': order['ticker'],
             'entry': float(order.get('limit_price') or order.get('reference_close')),
             'tp': float(order['tp_price']),
             'sl': float(order['sl_price']),
+            'reference_close': float(ref_close) if ref_close is not None else None,
+            'atr': float(atr) if atr is not None else None,
+            'gap_limit_atr': float(order.get('gap_limit_atr', 1.5)),
             'execution_date': order.get('execution_date'),
             'max_hold_days': int(order.get('max_hold_days', 20)),
             'time_exit': order.get('time_exit'),
@@ -190,7 +196,9 @@ def update_tracker(data):
     all_tickers = list(data['positions'].keys())
     signals = extract_signals_from_report()
     signal_tickers = [s['ticker'] for s in signals]
-    all_tickers_set = set(all_tickers + signal_tickers)
+    pending_orders = data.get('pending_orders', [])
+    pending_tickers = [o['ticker'] for o in pending_orders]
+    all_tickers_set = set(all_tickers + signal_tickers + pending_tickers)
     bars = get_current_bars(list(all_tickers_set))
     prices = {ticker: bar['close'] for ticker, bar in bars.items()}
 
@@ -247,31 +255,40 @@ def update_tracker(data):
     for t in to_close:
         del data['positions'][t]
 
-    # 3. 記錄今日信號 & 開新倉
-    if signals:
-        data['daily_signals'].append({'date': today, 'tickers': signal_tickers})
+    # 3. 執行到期的待執行訂單（next-open 模型：訊號於前一交易日產生，今日開盤進場）
+    #    對齊回測引擎 event_backtest.py:659 —— entry_price = 當日開盤價（無條件），
+    #    再套用回測的 gap filter（開盤相對前日收盤跳空 > gap_limit×ATR 則放棄）。
+    due_orders = [o for o in pending_orders
+                  if not o.get('execution_date') or o['execution_date'] <= today]
+    deferred = [o for o in pending_orders
+                if o.get('execution_date') and o['execution_date'] > today]
+    opened = 0
+    if due_orders:
         max_new = 7 - len(data['positions'])
         candidates = []
-        opened = 0
-        for sig in signals:
+        for sig in due_orders:
             if len(candidates) >= max_new:
                 break
             ticker = sig['ticker']
             if ticker in data['positions']:
                 continue
-            execution_date = sig.get('execution_date')
-            if execution_date and execution_date > today:
-                continue
             bar = bars.get(ticker)
             if bar is None:
+                print(f"   ⏭️ 無報價 {ticker}: 待執行訂單無法成交")
                 continue
-            limit_price = sig['entry']
-            open_price = bar.get('open')
-            low_price = bar.get('low')
-            if low_price is not None and low_price > limit_price:
-                print(f"   ⏭️ 未成交 {ticker}: low {low_price:.1f} > limit {limit_price:.1f}")
+            entry_price = bar.get('open')
+            if entry_price is None or entry_price <= 0:
+                entry_price = bar.get('close')  # 開盤價缺漏時退用收盤
+            if entry_price is None or entry_price <= 0:
                 continue
-            entry_price = min(open_price, limit_price) if open_price is not None and open_price <= limit_price else limit_price
+            # Gap filter（對齊回測）：開盤相對前日收盤跳空過大則放棄
+            ref_close = sig.get('reference_close') or sig.get('entry')
+            atr = sig.get('atr')
+            gap_limit = sig.get('gap_limit_atr', 1.5)
+            if atr and atr > 0 and ref_close:
+                if abs(entry_price - ref_close) > gap_limit * atr:
+                    print(f"   ⏭️ 跳空過濾 {ticker}: |{entry_price:.1f}-{ref_close:.1f}| > {gap_limit:.1f}×ATR({atr:.1f})")
+                    continue
             candidates.append((sig, entry_price))
 
         for idx, (sig, entry_price) in enumerate(candidates):
@@ -311,8 +328,31 @@ def update_tracker(data):
                 f"(投入 {actual_trade_amount:,.0f}, TP {sig['tp']:.1f} / SL {sig['sl']:.1f})"
             )
         if opened:
-            print(f"   ✅ 今日開倉 {opened} 檔")
+            print(f"   ✅ 今日開倉 {opened} 檔（待執行 {len(due_orders)} 筆）")
+        else:
+            print(f"   ⚠️ 待執行 {len(due_orders)} 筆皆未成交（跳空/資金/已持有）")
+
+    # 4. 記錄今日訊號，登錄為待執行訂單（隔日開盤執行，對齊回測 next-open）
+    if signals:
+        data['daily_signals'].append({'date': today, 'tickers': signal_tickers})
+        new_pending = [{
+            'ticker': s['ticker'],
+            'entry': s['entry'],
+            'tp': s['tp'],
+            'sl': s['sl'],
+            'reference_close': s.get('reference_close', s['entry']),
+            'atr': s.get('atr'),
+            'gap_limit_atr': s.get('gap_limit_atr', 1.5),
+            'execution_date': s.get('execution_date'),
+            'max_hold_days': s.get('max_hold_days', max_hold),
+            'signal_date': today,
+        } for s in signals]
+        # 今日訊號取代舊的待執行單（每交易日重新排序）；保留尚未到期者
+        data['pending_orders'] = new_pending + deferred
+        exec_date = signals[0].get('execution_date') or '次一交易日'
+        print(f"   📥 已登錄 {len(new_pending)} 筆待執行訂單（{exec_date} 開盤執行）")
     else:
+        data['pending_orders'] = deferred
         print(f"   📋 今日無信號")
 
     # 4. 計算今日總權益
@@ -408,6 +448,20 @@ def generate_html(data):
 
     if not positions_html:
         positions_html = '<tr><td colspan="6" style="text-align:center;color:#888">目前無持倉</td></tr>'
+
+    # 待執行訂單（next-open：隔日開盤進場）
+    pending_html = ""
+    for o in data.get('pending_orders', []):
+        pending_html += f"""
+        <tr>
+            <td><b>{o['ticker']}</b></td>
+            <td>{o.get('reference_close', o.get('entry', 0)):.1f}</td>
+            <td>{o['tp']:.1f}</td>
+            <td>{o['sl']:.1f}</td>
+            <td>{o.get('execution_date', '次一交易日')}</td>
+        </tr>"""
+    if not pending_html:
+        pending_html = '<tr><td colspan="5" style="text-align:center;color:#888">無待執行訂單</td></tr>'
 
     html = f"""<!DOCTYPE html>
 <html lang="zh-TW">
@@ -551,6 +605,14 @@ def generate_html(data):
         <table>
             <tr><th>股票</th><th>進場價</th><th>停利</th><th>停損</th><th>進場日</th><th>持有</th></tr>
             {positions_html}
+        </table>
+    </div>
+
+    <div class="chart-box">
+        <h2>⏳ 待執行訂單（隔日開盤進場）</h2>
+        <table>
+            <tr><th>股票</th><th>參考收盤</th><th>停利</th><th>停損</th><th>執行日</th></tr>
+            {pending_html}
         </table>
     </div>
 
