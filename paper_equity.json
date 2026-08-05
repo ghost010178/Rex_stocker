@@ -9,7 +9,7 @@
       "sl": 57.9735,
       "entry_date": "2026-07-15",
       "shares": 665,
-      "day_count": 14,
+      "day_count": 15,
       "max_hold_days": 20
     },
     "1326": {
@@ -18,7 +18,7 @@
       "sl": 54.401,
       "entry_date": "2026-07-15",
       "shares": 652,
-      "day_count": 14,
+      "day_count": 15,
       "max_hold_days": 20
     },
     "2887": {
@@ -27,7 +27,7 @@
       "sl": 31.44,
       "entry_date": "2026-07-22",
       "shares": 778,
-      "day_count": 9,
+      "day_count": 10,
       "max_hold_days": 20
     },
     "6505": {
@@ -36,7 +36,7 @@
       "sl": 61.79,
       "entry_date": "2026-07-28",
       "shares": 373,
-      "day_count": 5,
+      "day_count": 6,
       "max_hold_days": 20
     },
     "2395": {
@@ -45,7 +45,7 @@
       "sl": 491.9532,
       "entry_date": "2026-07-28",
       "shares": 49,
-      "day_count": 5,
+      "day_count": 6,
       "max_hold_days": 20
     },
     "2357": {
@@ -54,7 +54,7 @@
       "sl": 686.6,
       "entry_date": "2026-07-30",
       "shares": 33,
-      "day_count": 3,
+      "day_count": 4,
       "max_hold_days": 20
     },
     "3231": {
@@ -63,7 +63,7 @@
       "sl": 158.4212,
       "entry_date": "2026-08-04",
       "shares": 196,
-      "day_count": 0,
+      "day_count": 1,
       "max_hold_days": 20
     }
   },
@@ -962,6 +962,13 @@
       "capital": 20121.0,
       "n_positions": 7,
       "n_closed_today": 1
+    },
+    {
+      "date": "2026-08-05",
+      "equity": 250044.0,
+      "capital": 20121.0,
+      "n_positions": 7,
+      "n_closed_today": 0
     }
   ],
   "daily_signals": [
@@ -1816,92 +1823,104 @@
         "6505",
         "2884"
       ]
+    },
+    {
+      "date": "2026-08-05",
+      "tickers": [
+        "3231",
+        "6669",
+        "2395",
+        "2357",
+        "2301",
+        "3017",
+        "2408"
+      ]
     }
   ],
   "pending_orders": [
     {
       "ticker": "3231",
-      "entry": 195.0,
-      "tp": 234.0,
-      "sl": 165.75,
-      "reference_close": 195.0,
-      "atr": 9.75,
+      "entry": 193.0,
+      "tp": 233.1,
+      "sl": 162.925,
+      "reference_close": 193.0,
+      "atr": 10.025,
       "gap_limit_atr": 1.5,
-      "execution_date": "2026-08-05",
+      "execution_date": "2026-08-06",
       "max_hold_days": 20,
-      "signal_date": "2026-08-04"
+      "signal_date": "2026-08-05"
     },
     {
       "ticker": "6669",
-      "entry": 6205.0,
-      "tp": 7591.0,
-      "sl": 5165.5,
-      "reference_close": 6205.0,
-      "atr": 346.5,
+      "entry": 6175.0,
+      "tp": 7578.0,
+      "sl": 5122.75,
+      "reference_close": 6175.0,
+      "atr": 350.75,
       "gap_limit_atr": 1.5,
-      "execution_date": "2026-08-05",
+      "execution_date": "2026-08-06",
       "max_hold_days": 20,
-      "signal_date": "2026-08-04"
+      "signal_date": "2026-08-05"
     },
     {
       "ticker": "2395",
-      "entry": 576.0,
-      "tp": 704.9431,
-      "sl": 479.2927,
-      "reference_close": 576.0,
-      "atr": 32.2358,
+      "entry": 633.0,
+      "tp": 763.6516,
+      "sl": 535.0113,
+      "reference_close": 633.0,
+      "atr": 32.6629,
       "gap_limit_atr": 1.5,
-      "execution_date": "2026-08-05",
+      "execution_date": "2026-08-06",
       "max_hold_days": 20,
-      "signal_date": "2026-08-04"
-    },
-    {
-      "ticker": "2301",
-      "entry": 252.0,
-      "tp": 312.4,
-      "sl": 206.7,
-      "reference_close": 252.0,
-      "atr": 15.1,
-      "gap_limit_atr": 1.5,
-      "execution_date": "2026-08-05",
-      "max_hold_days": 20,
-      "signal_date": "2026-08-04"
+      "signal_date": "2026-08-05"
     },
     {
       "ticker": "2357",
-      "entry": 806.0,
-      "tp": 924.2,
-      "sl": 717.35,
-      "reference_close": 806.0,
-      "atr": 29.55,
+      "entry": 838.0,
+      "tp": 962.0,
+      "sl": 745.0,
+      "reference_close": 838.0,
+      "atr": 31.0,
       "gap_limit_atr": 1.5,
-      "execution_date": "2026-08-05",
+      "execution_date": "2026-08-06",
       "max_hold_days": 20,
-      "signal_date": "2026-08-04"
+      "signal_date": "2026-08-05"
     },
     {
-      "ticker": "6505",
-      "entry": 68.2,
-      "tp": 92.26,
-      "sl": 50.155,
-      "reference_close": 68.2,
-      "atr": 6.015,
+      "ticker": "2301",
+      "entry": 249.0,
+      "tp": 312.1,
+      "sl": 201.675,
+      "reference_close": 249.0,
+      "atr": 15.775,
       "gap_limit_atr": 1.5,
-      "execution_date": "2026-08-05",
+      "execution_date": "2026-08-06",
       "max_hold_days": 20,
-      "signal_date": "2026-08-04"
+      "signal_date": "2026-08-05"
     },
     {
-      "ticker": "2884",
-      "entry": 38.0,
-      "tp": 41.46,
-      "sl": 35.405,
-      "reference_close": 38.0,
-      "atr": 0.865,
+      "ticker": "3017",
+      "entry": 2730.0,
+      "tp": 3390.0,
+      "sl": 2235.0,
+      "reference_close": 2730.0,
+      "atr": 165.0,
       "gap_limit_atr": 1.5,
-      "execution_date": "2026-08-05",
+      "execution_date": "2026-08-06",
       "max_hold_days": 20,
-      "signal_date": "2026-08-04"
+      "signal_date": "2026-08-05"
+    },
+    {
+      "ticker": "2408",
+      "entry": 445.0,
+      "tp": 595.0,
+      "sl": 332.5,
+      "reference_close": 445.0,
+      "atr": 37.5,
+      "gap_limit_atr": 1.5,
+      "execution_date": "2026-08-06",
+      "max_hold_days": 20,
+      "signal_date": "2026-08-05"
     }
   ]
 }
